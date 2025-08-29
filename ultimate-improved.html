@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐔 Ultimate Flappy Chicken - Improved</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            max-width: 95vw;
+            max-height: 85vh;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            background: #87CEEB;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            cursor: pointer;
+            touch-action: none;
+        }
+        
+        /* Simple, clean menu like final.html */
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+        
+        .menu h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+        
+        .menu p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: #87CEEB;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+        }
+        
+        .difficulty-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .difficulty-group h3 {
+            color: #FFD700;
+            font-size: 1.1em;
+        }
+        
+        .difficulty-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .difficulty-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-height: 44px;
+        }
+        
+        .difficulty-btn:hover, .difficulty-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 20px 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76,175,80,0.3);
+            min-height: 44px;
+        }
+        
+        .start-btn:hover, .start-btn:active {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(76,175,80,0.4);
+        }
+        
+        .sound-toggle {
+            background: linear-gradient(135deg, #FF6B6B 0%, #ee5a52 100%);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sound-toggle:hover, .sound-toggle:active {
+            transform: rotate(15deg) scale(1.1);
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 20, 60, 0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            max-width: 90%;
+            display: none;
+        }
+        
+        .game-over h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        
+        .score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 50;
+        }
+        
+        .power-up-display {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 50;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 12px;
+            border-radius: 15px;
+            display: none;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 14px;
+            backdrop-filter: blur(5px);
+            text-align: center;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .feature {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #FFD700;
+        }
+        
+        .feature h4 {
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+        
+        .feature p {
+            color: #CCC;
+            font-size: 0.9em;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .game-container {
+                width: 100vw;
+                height: 100vh;
+                max-width: 100vw;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+            
+            canvas {
+                border-radius: 0;
+            }
+            
+            .menu {
+                padding: 20px;
+                max-width: 95%;
+                max-height: 95%;
+            }
+            
+            .menu h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .difficulty-buttons {
+                justify-content: center;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .instructions {
+                bottom: 10px;
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+        }
+        
+        @media (max-height: 600px) {
+            .features {
+                display: none;
+            }
+            
+            .menu {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div class="score-display" id="scoreDisplay">Score: 0</div>
+        <div class="power-up-display" id="powerUpDisplay"></div>
+        
+        <div id="menu" class="menu">
+            <h1>🐔 Ultimate Flappy Chicken</h1>
+            <p>Enhanced Edition with Power-ups & Effects</p>
+            
+            <div class="controls">
+                <div class="difficulty-group">
+                    <h3>🎮 Difficulty</h3>
+                    <div class="difficulty-buttons">
+                        <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+                        <button class="difficulty-btn active" data-difficulty="normal">Normal</button>
+                        <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                        <button class="difficulty-btn" data-difficulty="insane">Insane</button>
+                    </div>
+                </div>
+                
+                <div class="difficulty-group">
+                    <h3>🔊 Audio</h3>
+                    <button id="soundToggle" class="sound-toggle">🔊</button>
+                </div>
+            </div>
+            
+            <div class="features">
+                <div class="feature">
+                    <h4>✨ Power-ups</h4>
+                    <p>Shield, Slow Time, Double Score, Tiny Mode, Score Magnet</p>
+                </div>
+                <div class="feature">
+                    <h4>🌈 8 Chicken Variants</h4>
+                    <p>Unlock different chickens as you progress</p>
+                </div>
+                <div class="feature">
+                    <h4>⚡ Special Pipes</h4>
+                    <p>Golden, Crystal, and Fire pipes with bonus points</p>
+                </div>
+                <div class="feature">
+                    <h4>🏆 Combo System</h4>
+                    <p>Build combos for massive score multipliers</p>
+                </div>
+            </div>
+            
+            <button class="start-btn" onclick="startGame()">🚀 Start Ultimate Adventure</button>
+        </div>
+        
+        <div id="gameOver" class="game-over">
+            <h2>💥 Game Over!</h2>
+            <div style="font-size: 1.5em; margin: 20px 0; color: #FFD700;">
+                Final Score: <span id="finalScore">0</span>
+            </div>
+            <div id="newRecord" style="color: #FFD700; font-weight: bold; margin: 10px 0; display: none;">
+                🏆 NEW RECORD! 🏆
+            </div>
+            <div style="margin: 20px 0;">
+                Best Score: <span id="bestScore">0</span>
+            </div>
+            <button class="start-btn" onclick="restartGame()">🔄 Play Again</button>
+            <button class="start-btn" onclick="showMenu()">🏠 Main Menu</button>
+        </div>
+        
+        <div class="instructions">
+            <strong>Controls:</strong> Click or SPACE to flap | Keep clicking to stay airborne!
+        </div>
+    </div>
+    
+    <script>
+        // Enhanced Mobile-Friendly Game
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameRunning = false;
+        let gameStarted = false;
+        let score = 0;
+        let bestScore = parseInt(localStorage.getItem('flappyChickenBest')) || 0;
+        let frameCount = 0;
+        let difficulty = localStorage.getItem('flappyChickenDifficulty') || 'normal';
+        let soundEnabled = localStorage.getItem('flappyChickenSound') !== 'false';
+        let currentLevel = 1;
+        let powerUpActive = null;
+        let powerUpTimer = 0;
+        let comboMultiplier = 1;
+        let comboTimer = 0;
+        let currentChickenIndex = 0;
+        let screenShake = 0;
+        
+        // Mobile-friendly difficulty settings (easier than before)
+        const difficulties = {
+            easy: { 
+                gravity: 0.2, 
+                jumpPower: -5.5, 
+                pipeGap: 250, 
+                pipeSpeed: 1.2,
+                pipeInterval: 220,
+                firstPipeDelay: 120
+            },
+            normal: { 
+                gravity: 0.28, 
+                jumpPower: -6.5, 
+                pipeSpeed: 1.6, 
+                pipeGap: 220,
+                pipeInterval: 200,
+                firstPipeDelay: 100
+            },
+            hard: { 
+                gravity: 0.35, 
+                jumpPower: -7.5, 
+                pipeSpeed: 2.0, 
+                pipeGap: 200,
+                pipeInterval: 180,
+                firstPipeDelay: 90
+            },
+            insane: {
+                gravity: 0.42,
+                jumpPower: -8.5,
+                pipeSpeed: 2.5,
+                pipeGap: 180,
+                pipeInterval: 160,
+                firstPipeDelay: 80
+            }
+        };
+        
+        let currentDifficulty = difficulties[difficulty];
+        
+        // Chicken object
+        const chicken = {
+            x: 100,
+            y: 250,
+            width: 35,
+            height: 25,
+            velocity: 0,
+            maxVelocity: 8,
+            size: 1.0,
+            invulnerable: false,
+            invulnerabilityTimer: 0,
+            trail: [],
+            rotation: 0
+        };
+        
+        // Game objects
+        let pipes = [];
+        let powerUps = [];
+        let particles = [];
+        let explosions = [];
+        
+        // Ground
+        const groundHeight = 80;
+        const ground = canvas.height - groundHeight;
+        
+        // Enhanced Power-up types with more exciting effects
+        const powerUpTypes = {
+            SHIELD: { 
+                color: '#00FFFF', 
+                duration: 360, 
+                name: 'Shield',
+                description: 'Invulnerability + Rainbow Trail!'
+            },
+            SLOW_TIME: { 
+                color: '#FF69B4', 
+                duration: 300, 
+                name: 'Slow Time',
+                description: 'Everything slows down!'
+            },
+            DOUBLE_SCORE: { 
+                color: '#FFD700', 
+                duration: 420, 
+                name: '2x Score',
+                description: 'Double points + Golden glow!'
+            },
+            TINY_CHICKEN: { 
+                color: '#90EE90', 
+                duration: 360, 
+                name: 'Tiny Mode',
+                description: 'Shrink + Super speed!'
+            },
+            MAGNET: { 
+                color: '#FF4500', 
+                duration: 300, 
+                name: 'Score Magnet',
+                description: 'Auto-collect bonus points!'
+            }
+        };
+        
+        // Create chicken images
+        function createChickenVariations() {
+            const variations = [
+                { body: '#FFD700', accent: '#FFA500', name: 'Golden' },
+                { body: '#DEB887', accent: '#CD853F', name: 'Brown' },
+                { body: '#F5F5DC', accent: '#D2B48C', name: 'Beige' },
+                { body: '#FF7F50', accent: '#FF6347', name: 'Orange' },
+                { body: '#98FB98', accent: '#90EE90', name: 'Emerald' },
+                { body: '#87CEEB', accent: '#4169E1', name: 'Sky' },
+                { body: '#DDA0DD', accent: '#9370DB', name: 'Purple' },
+                { body: '#F0E68C', accent: '#DAA520', name: 'Golden Rod' }
+            ];
+            
+            return variations.map(colors => {
+                const img = new Image();
+                const svgChicken = `
+                    <svg width="35" height="25" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <radialGradient id="bodyGrad${colors.name}" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:${colors.body};stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:${colors.accent};stop-opacity:1" />
+                            </radialGradient>
+                        </defs>
+                        <ellipse cx="17" cy="17" rx="12" ry="8" fill="url(#bodyGrad${colors.name})" stroke="${colors.accent}" stroke-width="1"/>
+                        <circle cx="25" cy="10" r="6" fill="url(#bodyGrad${colors.name})" stroke="${colors.accent}" stroke-width="1"/>
+                        <polygon points="29,10 34,11 29,12" fill="#FF8C00"/>
+                        <circle cx="27" cy="8" r="1.2" fill="#000"/>
+                        <circle cx="27.3" cy="7.7" r="0.4" fill="#FFF"/>
+                        <path d="M 22 5 Q 24 3 26 5 Q 28 3 30 5" fill="#FF0000"/>
+                        <ellipse cx="15" cy="15" rx="4" ry="6" fill="${colors.accent}" stroke="${colors.body}" stroke-width="0.5"/>
+                        <ellipse cx="8" cy="16" rx="3" ry="5" fill="${colors.accent}" stroke="${colors.body}" stroke-width="0.5"/>
+                    </svg>
+                `;
+                img.src = 'data:image/svg+xml;base64,' + btoa(svgChicken);
+                img.chickenName = colors.name;
+                return img;
+            });
+        }
+        
+        let chickenImages = [];
+        
+        // Enhanced sound system
+        function playSound(frequency, duration, type = 'square') {
+            if (!soundEnabled) return;
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+        
+        // Enhanced Particle class
+        class Particle {
+            constructor(x, y, config) {
+                this.x = x;
+                this.y = y;
+                this.velocity = config.velocity || { x: 0, y: 0 };
+                this.color = config.color || '#FFF';
+                this.life = config.life || 1.0;
+                this.maxLife = this.life;
+                this.decay = config.decay || 0.02;
+                this.size = config.size || 2;
+                this.maxSize = this.size;
+                this.gravity = config.gravity || 0;
+                this.glow = config.glow || false;
+                this.shape = config.shape || 'circle';
+            }
+            
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.velocity.y += this.gravity;
+                this.life -= this.decay;
+                this.size = this.maxSize * (this.life / this.maxLife);
+            }
+            
+            draw() {
+                ctx.save();
+                
+                if (this.glow) {
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur = 10;
+                }
+                
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                
+                ctx.beginPath();
+                if (this.shape === 'circle') {
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                } else if (this.shape === 'square') {
+                    ctx.rect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+                }
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+        
+        // Enhanced Power-up class with exciting effects
+        class PowerUp {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.config = powerUpTypes[type];
+                this.size = 25;
+                this.collected = false;
+                this.bobOffset = Math.random() * Math.PI * 2;
+                this.rotation = 0;
+                this.pulseSize = 1.0;
+            }
+            
+            update() {
+                this.bobOffset += 0.15;
+                this.rotation += 0.08;
+                this.pulseSize = 1.0 + Math.sin(this.bobOffset * 2) * 0.2;
+                this.x -= currentDifficulty.pipeSpeed * 0.8;
+                
+                // Add sparkle particles
+                if (Math.random() < 0.4) {
+                    particles.push(new Particle(
+                        this.x + (Math.random() - 0.5) * this.size * 2,
+                        this.y + (Math.random() - 0.5) * this.size * 2,
+                        {
+                            velocity: { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 },
+                            color: this.config.color,
+                            life: 0.8,
+                            size: 3,
+                            glow: true,
+                            decay: 0.05
+                        }
+                    ));
+                }
+                
+                // Check collision with chicken
+                const dx = this.x - (chicken.x + chicken.width / 2);
+                const dy = this.y - (chicken.y + chicken.height / 2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < this.size + 20 && !this.collected) {
+                    this.collect();
+                }
+            }
+            
+            collect() {
+                this.collected = true;
+                playSound(600, 0.4, 'sine');
+                screenShake = 8;
+                
+                powerUpActive = this.type;
+                powerUpTimer = this.config.duration;
+                
+                // Create spectacular collection effect
+                for (let i = 0; i < 25; i++) {
+                    particles.push(new Particle(
+                        this.x, this.y,
+                        {
+                            velocity: {
+                                x: (Math.random() - 0.5) * 12,
+                                y: (Math.random() - 0.5) * 12
+                            },
+                            color: this.config.color,
+                            life: 1.5,
+                            size: Math.random() * 6 + 2,
+                            glow: true,
+                            shape: Math.random() > 0.5 ? 'circle' : 'square',
+                            decay: 0.03
+                        }
+                    ));
+                }
+                
+                // Apply power-up effects
+                this.applyEffect();
+                updatePowerUpDisplay();
+            }
+            
+            applyEffect() {
+                switch (this.type) {
+                    case 'SHIELD':
+                        chicken.invulnerable = true;
+                        chicken.invulnerabilityTimer = this.config.duration;
+                        break;
+                    case 'TINY_CHICKEN':
+                        chicken.size = 0.6;
+                        break;
+                    case 'SLOW_TIME':
+                        // Visual effect - screen tint
+                        break;
+                }
+            }
+            
+            draw() {
+                const bobY = this.y + Math.sin(this.bobOffset) * 8;
+                
+                ctx.save();
+                
+                // Outer glow ring
+                ctx.shadowColor = this.config.color;
+                ctx.shadowBlur = 20;
+                
+                ctx.translate(this.x, bobY);
+                ctx.rotate(this.rotation);
+                ctx.scale(this.pulseSize, this.pulseSize);
+                
+                // Main power-up circle
+                ctx.fillStyle = this.config.color;
+                ctx.strokeStyle = '#FFF';
+                ctx.lineWidth = 3;
+                
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Inner symbol
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                const symbols = {
+                    'SHIELD': '🛡️',
+                    'SLOW_TIME': '⏰',
+                    'DOUBLE_SCORE': '2x',
+                    'TINY_CHICKEN': '↓',
+                    'MAGNET': '🧲'
+                };
+                
+                ctx.fillText(symbols[this.type] || '?', 0, 0);
+                
+                ctx.restore();
+            }
+        }
+        
+        // Initialize game
+        function init() {
+            chickenImages = createChickenVariations();
+            reset();
+            gameLoop();
+            updateBestScore();
+        }
+        
+        // Reset game
+        function reset() {
+            chicken.x = 100;
+            chicken.y = canvas.height / 2;
+            chicken.velocity = 0;
+            chicken.size = 1.0;
+            chicken.invulnerable = false;
+            chicken.invulnerabilityTimer = 0;
+            chicken.trail = [];
+            chicken.rotation = 0;
+            pipes = [];
+            powerUps = [];
+            particles = [];
+            explosions = [];
+            score = 0;
+            frameCount = 0;
+            currentLevel = 1;
+            powerUpActive = null;
+            powerUpTimer = 0;
+            comboMultiplier = 1;
+            comboTimer = 0;
+            screenShake = 0;
+            gameRunning = false;
+            gameStarted = false;
+            
+            // Hide game over screen
+            document.getElementById('gameOver').style.display = 'none';
+            
+            updateScore();
+            updatePowerUpDisplay();
+        }
+        
+        // Create pipe
+        function createPipe() {
+            const minHeight = 80;
+            const maxHeight = ground - currentDifficulty.pipeGap - 80;
+            const topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+            
+            const pipe = {
+                x: canvas.width,
+                topHeight: topHeight,
+                bottomY: topHeight + currentDifficulty.pipeGap,
+                passed: false,
+                special: Math.random() < 0.2,
+                type: 'normal'
+            };
+            
+            if (pipe.special) {
+                const types = ['golden', 'crystal', 'fire'];
+                pipe.type = types[Math.floor(Math.random() * types.length)];
+            }
+            
+            pipes.push(pipe);
+            
+            // Spawn power-up more frequently
+            if (Math.random() < 0.3 && score > 3) {
+                const powerUpTypeKeys = Object.keys(powerUpTypes);
+                const randomType = powerUpTypeKeys[Math.floor(Math.random() * powerUpTypeKeys.length)];
+                
+                powerUps.push(new PowerUp(
+                    canvas.width + 100,
+                    topHeight + currentDifficulty.pipeGap / 2,
+                    randomType
+                ));
+            }
+        }
+        
+        // Update game
+        function update() {
+            if (!gameRunning) return;
+            
+            frameCount++;
+            
+            // Screen shake decay
+            if (screenShake > 0) {
+                screenShake *= 0.9;
+            }
+            
+            // Time multiplier for slow time power-up
+            const timeMultiplier = (powerUpActive === 'SLOW_TIME') ? 0.4 : 1.0;
+            
+            // Update chicken
+            chicken.velocity += currentDifficulty.gravity * timeMultiplier;
+            if (chicken.velocity > chicken.maxVelocity) {
+                chicken.velocity = chicken.maxVelocity;
+            }
+            chicken.y += chicken.velocity * timeMultiplier;
+            
+            // Chicken rotation
+            chicken.rotation = Math.min(Math.max(chicken.velocity * 0.1, -0.4), 0.4);
+            
+            // Enhanced trail effect
+            if (frameCount % 2 === 0) {
+                let trailColor = '#87CEEB';
+                
+                // Rainbow trail for shield
+                if (powerUpActive === 'SHIELD') {
+                    const hue = (frameCount * 5) % 360;
+                    trailColor = `hsl(${hue}, 100%, 60%)`;
+                } else if (powerUpActive === 'DOUBLE_SCORE') {
+                    trailColor = '#FFD700';
+                } else if (powerUpActive === 'TINY_CHICKEN') {
+                    trailColor = '#90EE90';
+                }
+                
+                chicken.trail.push({
+                    x: chicken.x + chicken.width / 2,
+                    y: chicken.y + chicken.height / 2,
+                    life: 1.0,
+                    color: trailColor
+                });
+                
+                if (chicken.trail.length > 12) {
+                    chicken.trail.shift();
+                }
+            }
+            
+            chicken.trail.forEach(point => {
+                point.life -= 0.08;
+            });
+            chicken.trail = chicken.trail.filter(point => point.life > 0);
+            
+            // Update invulnerability
+            if (chicken.invulnerabilityTimer > 0) {
+                chicken.invulnerabilityTimer--;
+                if (chicken.invulnerabilityTimer <= 0) {
+                    chicken.invulnerable = false;
+                }
+            }
+            
+            // Update power-up timer
+            if (powerUpTimer > 0) {
+                powerUpTimer--;
+                if (powerUpTimer <= 0) {
+                    if (powerUpActive === 'TINY_CHICKEN') {
+                        chicken.size = 1.0;
+                    }
+                    powerUpActive = null;
+                    updatePowerUpDisplay();
+                }
+            }
+            
+            // Update combo timer
+            if (comboTimer > 0) {
+                comboTimer--;
+                if (comboTimer <= 0) {
+                    comboMultiplier = 1;
+                }
+            }
+            
+            // Update pipes
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                const pipe = pipes[i];
+                pipe.x -= currentDifficulty.pipeSpeed * timeMultiplier;
+                
+                // Score when passing pipe
+                if (!pipe.passed && pipe.x + 60 < chicken.x) {
+                    pipe.passed = true;
+                    
+                    let scoreGain = 1;
+                    if (pipe.special) {
+                        scoreGain = pipe.type === 'golden' ? 3 : pipe.type === 'crystal' ? 2 : 1;
+                    }
+                    
+                    if (powerUpActive === 'DOUBLE_SCORE') scoreGain *= 2;
+                    scoreGain = Math.round(scoreGain * comboMultiplier);
+                    
+                    score += scoreGain;
+                    playSound(800, 0.3, 'sine');
+                    updateScore();
+                    
+                    // Combo system
+                    comboMultiplier = Math.min(comboMultiplier + 0.1, 3.0);
+                    comboTimer = 180;
+                    
+                    // Level progression
+                    if (score > currentLevel * 10) {
+                        currentLevel++;
+                        playSound(1200, 0.5, 'triangle');
+                        screenShake = 5;
+                    }
+                    
+                    // Change chicken every 5 points
+                    if (score % 5 === 0 && chickenImages.length > 1) {
+                        currentChickenIndex = (currentChickenIndex + 1) % chickenImages.length;
+                    }
+                    
+                    // Score particles
+                    for (let j = 0; j < scoreGain * 2; j++) {
+                        particles.push(new Particle(
+                            pipe.x + 30, pipe.topHeight + currentDifficulty.pipeGap / 2,
+                            {
+                                velocity: {
+                                    x: (Math.random() - 0.5) * 6,
+                                    y: (Math.random() - 0.5) * 6 - 2
+                                },
+                                color: pipe.special ? '#FFD700' : '#90EE90',
+                                life: 1.2,
+                                size: 4,
+                                glow: true
+                            }
+                        ));
+                    }
+                }
+                
+                // Remove off-screen pipes
+                if (pipe.x + 60 < 0) {
+                    pipes.splice(i, 1);
+                }
+                
+                // Enhanced collision detection
+                const margin = chicken.invulnerable ? 0 : 2;
+                const chickenSize = chicken.size;
+                
+                if (pipe.x < chicken.x + chicken.width * chickenSize - margin && 
+                    pipe.x + 60 > chicken.x + margin) {
+                    if (chicken.y + margin < pipe.topHeight || 
+                        chicken.y + chicken.height * chickenSize - margin > pipe.bottomY) {
+                        
+                        if (!chicken.invulnerable) {
+                            gameOver();
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // Create new pipes
+            if (frameCount > currentDifficulty.firstPipeDelay && 
+                (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - currentDifficulty.pipeInterval)) {
+                createPipe();
+            }
+            
+            // Update power-ups
+            powerUps = powerUps.filter(powerUp => {
+                powerUp.update();
+                return !powerUp.collected && powerUp.x > -50;
+            });
+            
+            // Update particles
+            particles = particles.filter(particle => {
+                particle.update();
+                return !particle.isDead();
+            });
+            
+            // Ground and ceiling collision
+            if (chicken.y + chicken.height * chicken.size > ground - 5 || chicken.y < 5) {
+                if (!chicken.invulnerable) {
+                    gameOver();
+                }
+            }
+        }
+        
+        // Enhanced draw function
+        function draw() {
+            // Apply screen shake
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake,
+                    (Math.random() - 0.5) * screenShake
+                );
+            }
+            
+            // Clear canvas with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            
+            // Slow time effect - purple tint
+            if (powerUpActive === 'SLOW_TIME') {
+                gradient.addColorStop(0, '#9370DB');
+                gradient.addColorStop(0.7, '#8A2BE2');
+                gradient.addColorStop(1, '#4B0082');
+            } else {
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(0.7, '#87CEEB');
+                gradient.addColorStop(1, '#90EE90');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw pipes with enhanced effects
+            pipes.forEach(pipe => {
+                let pipeColor = '#228B22';
+                let capColor = '#32CD32';
+                let glowColor = null;
+                
+                if (pipe.special) {
+                    switch (pipe.type) {
+                        case 'golden':
+                            pipeColor = '#DAA520';
+                            capColor = '#FFD700';
+                            glowColor = '#FFD700';
+                            break;
+                        case 'crystal':
+                            pipeColor = '#4169E1';
+                            capColor = '#00BFFF';
+                            glowColor = '#00FFFF';
+                            break;
+                        case 'fire':
+                            pipeColor = '#DC143C';
+                            capColor = '#FF4500';
+                            glowColor = '#FF6347';
+                            break;
+                    }
+                }
+                
+                if (glowColor) {
+                    ctx.shadowColor = glowColor;
+                    ctx.shadowBlur = 15;
+                }
+                
+                ctx.fillStyle = pipeColor;
+                ctx.fillRect(pipe.x, 0, 60, pipe.topHeight);
+                ctx.fillRect(pipe.x, pipe.bottomY, 60, ground - pipe.bottomY);
+                
+                ctx.fillStyle = capColor;
+                ctx.fillRect(pipe.x - 3, pipe.topHeight - 15, 66, 15);
+                ctx.fillRect(pipe.x - 3, pipe.bottomY, 66, 15);
+                
+                if (pipe.special) {
+                    ctx.fillStyle = '#FFF';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    
+                    const symbols = { 'golden': '★', 'crystal': '◆', 'fire': '🔥' };
+                    ctx.fillText(symbols[pipe.type], pipe.x + 30, pipe.topHeight - 7);
+                    ctx.fillText(symbols[pipe.type], pipe.x + 30, pipe.bottomY + 7);
+                }
+                
+                ctx.shadowBlur = 0;
+            });
+            
+            // Draw ground
+            const groundGradient = ctx.createLinearGradient(0, ground, 0, canvas.height);
+            groundGradient.addColorStop(0, '#8B4513');
+            groundGradient.addColorStop(1, '#654321');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, ground, canvas.width, groundHeight);
+            
+            // Draw power-ups
+            powerUps.forEach(powerUp => powerUp.draw());
+            
+            // Draw particles
+            particles.forEach(particle => particle.draw());
+            
+            // Draw enhanced chicken trail
+            chicken.trail.forEach((point, index) => {
+                ctx.save();
+                ctx.globalAlpha = point.life * 0.6;
+                ctx.fillStyle = point.color || '#87CEEB';
+                
+                if (powerUpActive === 'SHIELD') {
+                    ctx.shadowColor = point.color;
+                    ctx.shadowBlur = 8;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4 * point.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+            
+            // Draw chicken with enhanced effects
+            if (gameRunning && chickenImages.length > 0) {
+                ctx.save();
+                
+                // Power-up glow effects
+                if (powerUpActive) {
+                    const glowColors = {
+                        'SHIELD': '#00FFFF',
+                        'SLOW_TIME': '#FF69B4',
+                        'DOUBLE_SCORE': '#FFD700',
+                        'TINY_CHICKEN': '#90EE90',
+                        'MAGNET': '#FF4500'
+                    };
+                    
+                    ctx.shadowColor = glowColors[powerUpActive];
+                    ctx.shadowBlur = 20;
+                }
+                
+                // Invulnerability flashing
+                if (chicken.invulnerable && Math.floor(frameCount / 4) % 2) {
+                    ctx.globalAlpha = 0.7;
+                }
+                
+                ctx.translate(chicken.x + chicken.width/2, chicken.y + chicken.height/2);
+                ctx.rotate(chicken.rotation);
+                ctx.scale(chicken.size, chicken.size);
+                
+                const chickenImg = chickenImages[currentChickenIndex] || chickenImages[0];
+                if (chickenImg && chickenImg.complete) {
+                    ctx.drawImage(chickenImg, -chicken.width/2, -chicken.height/2, chicken.width, chicken.height);
+                }
+                
+                ctx.restore();
+            }
+            
+            // Draw start screen
+            if (!gameStarted) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🐔 Ultimate Flappy Chicken', canvas.width/2, canvas.height/2 - 50);
+                
+                ctx.font = '24px Arial';
+                ctx.fillText('Click to start!', canvas.width/2, canvas.height/2 + 20);
+            }
+            
+            ctx.restore(); // Restore from screen shake
+        }
+        
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Jump function
+        function jump() {
+            if (!gameStarted) {
+                gameStarted = true;
+                gameRunning = true;
+                document.getElementById('menu').style.display = 'none';
+            }
+            
+            if (gameRunning) {
+                chicken.velocity = currentDifficulty.jumpPower;
+                playSound(400, 0.15, 'square');
+                
+                // Jump particles
+                for (let i = 0; i < 3; i++) {
+                    particles.push(new Particle(
+                        chicken.x + chicken.width / 2,
+                        chicken.y + chicken.height,
+                        {
+                            velocity: {
+                                x: (Math.random() - 0.5) * 4,
+                                y: Math.random() * 2 + 1
+                            },
+                            color: '#87CEEB',
+                            life: 0.8,
+                            size: 3,
+                            gravity: 0.1
+                        }
+                    ));
+                }
+            }
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            playSound(200, 1.2, 'sawtooth');
+            screenShake = 20;
+            
+            // Explosion particles
+            for (let i = 0; i < 30; i++) {
+                particles.push(new Particle(
+                    chicken.x + chicken.width / 2,
+                    chicken.y + chicken.height / 2,
+                    {
+                        velocity: {
+                            x: (Math.random() - 0.5) * 10,
+                            y: (Math.random() - 0.5) * 10
+                        },
+                        color: `hsl(${Math.random() * 60 + 10}, 100%, 60%)`,
+                        life: 1.5,
+                        size: Math.random() * 6 + 2,
+                        gravity: 0.1,
+                        glow: true
+                    }
+                ));
+            }
+            
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('flappyChickenBest', bestScore);
+                updateBestScore();
+                document.getElementById('newRecord').style.display = 'block';
+            } else {
+                document.getElementById('newRecord').style.display = 'none';
+            }
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        // UI functions
+        function startGame() {
+            document.getElementById('menu').style.display = 'none';
+            jump();
+        }
+        
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            reset();
+            jump();
+        }
+        
+        function showMenu() {
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
+            gameStarted = false;
+            gameRunning = false;
+        }
+        
+        function changeDifficulty(newDifficulty) {
+            difficulty = newDifficulty;
+            localStorage.setItem('flappyChickenDifficulty', difficulty);
+            currentDifficulty = difficulties[difficulty];
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.difficulty === difficulty);
+            });
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('flappyChickenSound', soundEnabled);
+            document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+        
+        function updateScore() {
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+        }
+        
+        function updateBestScore() {
+            document.getElementById('bestScore').textContent = bestScore;
+        }
+        
+        function updatePowerUpDisplay() {
+            const display = document.getElementById('powerUpDisplay');
+            if (powerUpActive) {
+                const config = powerUpTypes[powerUpActive];
+                const timeLeft = Math.ceil(powerUpTimer / 60);
+                display.innerHTML = `<strong>${config.name}</strong><br>${config.description}<br>Time: ${timeLeft}s`;
+                display.style.display = 'block';
+                display.style.borderLeft = `4px solid ${config.color}`;
+            } else {
+                display.style.display = 'none';
+            }
+        }
+        
+        // Event listeners
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                changeDifficulty(btn.dataset.difficulty);
+            });
+        });
+        
+        document.getElementById('soundToggle').addEventListener('click', toggleSound);
+        
+        canvas.addEventListener('click', jump);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        // Mobile touch events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+        
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+        
+        // Prevent mobile zoom and scroll
+        document.addEventListener('touchmove', (e) => {
+            if (e.target === canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Initialize game
+        init();
+    </script>
+</body>
+</html>
