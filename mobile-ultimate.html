@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>🐔 Ultimate Flappy Chicken - Mobile Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 800px;
+            max-height: 600px;
+            border-radius: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            display: block;
+            cursor: pointer;
+            touch-action: none;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #87CEEB;
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .menu h1 {
+            font-size: clamp(1.5em, 5vw, 2.5em);
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+        
+        .menu h2 {
+            font-size: clamp(0.9em, 3vw, 1.2em);
+            margin-bottom: 20px;
+            color: #87CEEB;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .control-group {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .control-group h3 {
+            color: #FFD700;
+            margin-bottom: 10px;
+            font-size: clamp(0.9em, 3vw, 1.1em);
+        }
+        
+        .difficulty-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .difficulty-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: clamp(12px, 3vw, 14px);
+            transition: all 0.3s ease;
+            pointer-events: all;
+            position: relative;
+            overflow: hidden;
+            min-height: 44px; /* iOS touch target */
+        }
+        
+        .difficulty-btn:hover, .difficulty-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .difficulty-btn.active {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: clamp(14px, 4vw, 18px);
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 15px 5px;
+            transition: all 0.3s ease;
+            pointer-events: all;
+            box-shadow: 0 4px 15px rgba(76,175,80,0.3);
+            min-height: 44px;
+        }
+        
+        .start-btn:hover, .start-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(76,175,80,0.4);
+        }
+        
+        .sound-toggle {
+            background: linear-gradient(135deg, #FF6B6B 0%, #ee5a52 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: clamp(16px, 4vw, 20px);
+            transition: all 0.3s ease;
+            pointer-events: all;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        
+        .sound-toggle:hover, .sound-toggle:active {
+            transform: scale(0.9);
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 20, 60, 0.95);
+            color: white;
+            padding: 30px 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+            max-width: 90vw;
+        }
+        
+        .game-over h2 {
+            font-size: clamp(1.5em, 6vw, 2.5em);
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        
+        .score-display {
+            font-size: clamp(1.2em, 4vw, 1.5em);
+            margin: 15px 0;
+            color: #FFD700;
+        }
+        
+        .new-record {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: clamp(1em, 3vw, 1.2em);
+            font-weight: bold;
+            margin: 10px 0;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .restart-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: clamp(14px, 3vw, 16px);
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 8px;
+            transition: all 0.3s ease;
+            pointer-events: all;
+            min-height: 44px;
+        }
+        
+        .restart-btn:hover, .restart-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(76,175,80,0.3);
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: clamp(10px, 2.5vw, 12px);
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+            text-align: center;
+            max-width: 90vw;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .feature-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 3px solid #FFD700;
+        }
+        
+        .feature-item h4 {
+            color: #FFD700;
+            margin-bottom: 3px;
+            font-size: clamp(0.8em, 2.5vw, 0.9em);
+        }
+        
+        .feature-item p {
+            color: #CCC;
+            font-size: clamp(0.7em, 2vw, 0.8em);
+        }
+        
+        .stats-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: clamp(10px, 2.5vw, 12px);
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+        }
+        
+        .power-up-guide {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .power-up-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: clamp(0.7em, 2vw, 0.8em);
+        }
+        
+        .power-up-icon {
+            font-size: clamp(1.2em, 3vw, 1.4em);
+            margin-bottom: 3px;
+        }
+        
+        /* Mobile-specific optimizations */
+        @media (max-width: 768px) {
+            .game-container {
+                border-radius: 0;
+            }
+            
+            canvas {
+                border-radius: 0;
+            }
+            
+            .menu {
+                padding: 15px;
+                border-radius: 10px;
+                margin: 10px;
+            }
+            
+            .controls-grid {
+                margin: 15px 0;
+            }
+            
+            .difficulty-buttons {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            
+            .instructions {
+                bottom: 5px;
+                padding: 8px 12px;
+                font-size: 10px;
+            }
+        }
+        
+        @media (max-height: 600px) {
+            .menu {
+                max-height: 85vh;
+                padding: 10px;
+            }
+            
+            .menu h1 {
+                font-size: 1.5em;
+                margin-bottom: 10px;
+            }
+            
+            .feature-list {
+                display: none; /* Hide on very small screens */
+            }
+            
+            .power-up-guide {
+                display: none; /* Hide on very small screens */
+            }
+        }
+        
+        /* Landscape mobile optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .menu {
+                max-height: 90vh;
+                overflow-y: auto;
+                padding: 10px;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: clamp(1em, 3vw, 1.2em);
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid #FFD700;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Prevent zoom on double tap */
+        .no-zoom {
+            touch-action: manipulation;
+        }
+        
+        /* Hide scrollbars */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="no-zoom">
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div class="ui-overlay">
+            <!-- Main Menu -->
+            <div id="menu" class="menu">
+                <h1>🐔 Ultimate Flappy Chicken</h1>
+                <h2>Mobile Enhanced Edition</h2>
+                
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <h3>🎮 Difficulty Level</h3>
+                        <div class="difficulty-buttons">
+                            <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+                            <button class="difficulty-btn active" data-difficulty="normal">Normal</button>
+                            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                            <button class="difficulty-btn" data-difficulty="insane">Insane</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3>🔊 Audio Settings</h3>
+                        <button id="soundToggle" class="sound-toggle">🔊</button>
+                        <p style="margin-top: 8px; font-size: 0.8em; color: #CCC;">
+                            Enhanced sound effects
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <h4>✨ Power-ups</h4>
+                        <p>Shield, Slow Time, Double Score, Tiny Mode, Score Magnet</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🌈 8 Chicken Variants</h4>
+                        <p>Unlock different chickens as you progress</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>⚡ Special Pipes</h4>
+                        <p>Golden, Crystal, and Fire pipes with bonus points</p>
+                    </div>
+                </div>
+                
+                <div class="power-up-guide">
+                    <div class="power-up-item">
+                        <div class="power-up-icon" style="color: #00FFFF;">🛡️</div>
+                        <div>Shield</div>
+                    </div>
+                    <div class="power-up-item">
+                        <div class="power-up-icon" style="color: #FF69B4;">⏰</div>
+                        <div>Slow Time</div>
+                    </div>
+                    <div class="power-up-item">
+                        <div class="power-up-icon" style="color: #FFD700;">2x</div>
+                        <div>Double Score</div>
+                    </div>
+                    <div class="power-up-item">
+                        <div class="power-up-icon" style="color: #90EE90;">↓</div>
+                        <div>Tiny Mode</div>
+                    </div>
+                    <div class="power-up-item">
+                        <div class="power-up-icon" style="color: #FF4500;">🧲</div>
+                        <div>Score Magnet</div>
+                    </div>
+                </div>
+                
+                <button class="start-btn" onclick="startGame()">🚀 Start Game</button>
+                <button class="start-btn" onclick="showInstructions()">📖 How to Play</button>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div id="gameOver" class="game-over" style="display: none;">
+                <h2>💥 Game Over!</h2>
+                <div class="score-display">
+                    Final Score: <span id="finalScore">0</span>
+                </div>
+                <div id="newRecord" class="new-record" style="display: none;">
+                    🏆 NEW RECORD! 🏆
+                </div>
+                <div style="margin: 15px 0; color: #FFD700;">
+                    Best Score: <span id="bestScore">0</span>
+                </div>
+                <button class="restart-btn" onclick="restartGame()">🔄 Play Again</button>
+                <button class="restart-btn" onclick="showMenu()">🏠 Main Menu</button>
+            </div>
+            
+            <!-- Stats Display -->
+            <div class="stats-display">
+                <div id="score">Score: 0</div>
+                <div id="level">Level: 1</div>
+                <div id="combo" style="display: none;">Combo: 1.0x</div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <strong>Mobile:</strong> Tap screen to flap | Keep tapping to stay airborne!
+        </div>
+    </div>
+    
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        Loading Ultimate Flappy Chicken...
+    </div>
+    
+    <script>
+        // Mobile-optimized game variables
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let isTouch = 'ontouchstart' in window;
+        
+        // Prevent zoom and scroll
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gesturechange', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('gestureend', function(e) {
+            e.preventDefault();
+        });
+        
+        // Prevent double-tap zoom
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            let now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        
+        // Canvas setup with mobile optimization
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const container = document.querySelector('.game-container');
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate optimal canvas size
+            const maxWidth = Math.min(containerRect.width, 800);
+            const maxHeight = Math.min(containerRect.height, 600);
+            
+            // Maintain aspect ratio
+            const aspectRatio = 800 / 600;
+            let canvasWidth, canvasHeight;
+            
+            if (maxWidth / maxHeight > aspectRatio) {
+                canvasHeight = maxHeight;
+                canvasWidth = canvasHeight * aspectRatio;
+            } else {
+                canvasWidth = maxWidth;
+                canvasHeight = canvasWidth / aspectRatio;
+            }
+            
+            canvas.style.width = canvasWidth + 'px';
+            canvas.style.height = canvasHeight + 'px';
+            
+            // Set actual canvas resolution
+            canvas.width = 800;
+            canvas.height = 600;
+        }
+        
+        // Initialize canvas size
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(resizeCanvas, 100);
+        });
+    </script>
+    
+    <script src="ultimate-game.js"></script>
+    
+    <script>
+        // UI Integration with mobile optimizations
+        const menuElement = document.getElementById('menu');
+        const gameOverElement = document.getElementById('gameOver');
+        const scoreElement = document.getElementById('score');
+        const finalScoreElement = document.getElementById('finalScore');
+        
+        // Initialize difficulty buttons
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newDifficulty = btn.dataset.difficulty;
+                changeDifficulty(newDifficulty);
+            });
+            
+            // Add touch feedback
+            btn.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.95)';
+            });
+            
+            btn.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+        
+        // Sound toggle with touch feedback
+        document.getElementById('soundToggle').addEventListener('click', toggleSound);
+        document.getElementById('soundToggle').addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.9)';
+        });
+        document.getElementById('soundToggle').addEventListener('touchend', function() {
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+        
+        // Start game function
+        function startGame() {
+            hideMenu();
+            jump(); // This will start the game
+        }
+        
+        // Show instructions optimized for mobile
+        function showInstructions() {
+            const instructions = isMobile ? 
+                `🐔 Ultimate Flappy Chicken - Mobile Guide
+
+📱 MOBILE CONTROLS:
+• TAP the screen to make the chicken flap
+• Keep tapping regularly - the chicken falls due to gravity!
+• Tap anywhere on the game area to control
+
+✨ POWER-UPS:
+• 🛡️ Shield - Temporary invulnerability
+• ⏰ Slow Time - Slows down the game
+• 2x Double Score - Doubles your points
+• ↓ Tiny Mode - Makes chicken smaller
+• 🧲 Score Magnet - Attracts bonus points
+
+🌟 SPECIAL PIPES:
+• ★ Golden Pipes - 3x points
+• ◆ Crystal Pipes - 2x points  
+• 🔥 Fire Pipes - 1x points + effects
+
+🎯 MOBILE TIPS:
+• Find your tapping rhythm (every 0.5-1 seconds)
+• Use your thumb for comfortable tapping
+• Play in landscape mode for better view
+• Adjust difficulty if too hard/easy
+
+Good luck! 🐔✨` :
+                `🐔 Ultimate Flappy Chicken - How to Play
+
+🎮 CONTROLS:
+• Click or press SPACE to make the chicken flap
+• Keep clicking regularly - the chicken falls due to gravity!
+
+✨ POWER-UPS:
+• 🛡️ Shield - Temporary invulnerability
+• ⏰ Slow Time - Slows down the game
+• 2x Double Score - Doubles your points
+• ↓ Tiny Mode - Makes chicken smaller
+• 🧲 Score Magnet - Attracts bonus points
+
+🌟 SPECIAL PIPES:
+• ★ Golden Pipes - 3x points
+• ◆ Crystal Pipes - 2x points  
+• 🔥 Fire Pipes - 1x points + effects
+
+🏆 SCORING:
+• Pass through pipes to score points
+• Build combos for score multipliers
+• Special pipes give bonus points
+• Power-ups can double your score
+
+🎯 TIPS:
+• Find your clicking rhythm (every 0.5-1 seconds)
+• Look ahead to plan your route
+• Collect power-ups for advantages
+• Practice makes perfect!
+
+Good luck! 🐔✨`;
+            
+            alert(instructions);
+        }
+        
+        // Update UI elements with mobile considerations
+        function updateUI() {
+            if (typeof score !== 'undefined') {
+                scoreElement.textContent = `Score: ${score}`;
+            }
+            if (typeof currentLevel !== 'undefined') {
+                document.getElementById('level').textContent = `Level: ${currentLevel}`;
+            }
+            if (typeof comboMultiplier !== 'undefined' && comboMultiplier > 1) {
+                const comboElement = document.getElementById('combo');
+                comboElement.textContent = `Combo: ${comboMultiplier.toFixed(1)}x`;
+                comboElement.style.display = 'block';
+            } else {
+                document.getElementById('combo').style.display = 'none';
+            }
+        }
+        
+        // Update UI every frame
+        setInterval(updateUI, 100);
+        
+        // Loading screen
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Initialize with mobile detection
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            if (isMobile) {
+                // Mobile-specific initialization
+                document.querySelector('.instructions').innerHTML = 
+                    '<strong>Mobile:</strong> Tap screen to flap | Keep tapping to stay airborne!';
+            }
+        }, 1000);
+        
+        // Prevent context menu on long press
+        canvas.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Enhanced touch handling
+        let touchStartTime = 0;
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            touchStartTime = Date.now();
+        });
+        
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchDuration < 500) { // Only register quick taps
+                jump();
+            }
+        });
+        
+        // Prevent scrolling when touching the canvas
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>

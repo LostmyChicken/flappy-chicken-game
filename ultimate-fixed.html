@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🐔 Ultimate Flappy Chicken - Fixed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        canvas {
+            display: block;
+            cursor: pointer;
+            border-radius: 20px;
+            background: #87CEEB;
+        }
+        
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 100;
+        }
+        
+        .menu h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #FFD700;
+        }
+        
+        .start-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        .start-btn:hover {
+            background: #45a049;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 20, 60, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+        
+        .score-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+        
+        @media (max-width: 768px) {
+            canvas {
+                width: 100vw;
+                height: 60vh;
+                border-radius: 0;
+            }
+            
+            .game-container {
+                border-radius: 0;
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            .menu {
+                padding: 20px;
+                max-width: 90vw;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div class="score-display" id="scoreDisplay">Score: 0</div>
+        
+        <div id="menu" class="menu">
+            <h1>🐔 Ultimate Flappy Chicken</h1>
+            <p>Keep clicking to stay airborne!</p>
+            <button class="start-btn" onclick="startGame()">🚀 Start Game</button>
+        </div>
+        
+        <div id="gameOver" class="game-over">
+            <h2>💥 Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button class="start-btn" onclick="restartGame()">🔄 Play Again</button>
+        </div>
+    </div>
+    
+    <script>
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameRunning = false;
+        let gameStarted = false;
+        let score = 0;
+        let frameCount = 0;
+        
+        // Chicken object
+        const chicken = {
+            x: 100,
+            y: 250,
+            width: 35,
+            height: 25,
+            velocity: 0,
+            gravity: 0.35,
+            jumpPower: -7,
+            maxVelocity: 8
+        };
+        
+        // Pipes array
+        let pipes = [];
+        const pipeWidth = 60;
+        const pipeGap = 200;
+        const pipeSpeed = 2;
+        
+        // Ground
+        const groundHeight = 80;
+        const ground = canvas.height - groundHeight;
+        
+        // Create chicken image
+        function createChickenImage() {
+            const img = new Image();
+            const svgChicken = `
+                <svg width="35" height="25" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="bodyGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+                        </radialGradient>
+                    </defs>
+                    <ellipse cx="17" cy="17" rx="12" ry="8" fill="url(#bodyGrad)" stroke="#FF8C00" stroke-width="1"/>
+                    <circle cx="25" cy="10" r="6" fill="url(#bodyGrad)" stroke="#FF8C00" stroke-width="1"/>
+                    <polygon points="29,10 34,11 29,12" fill="#FF8C00"/>
+                    <circle cx="27" cy="8" r="1.2" fill="#000"/>
+                    <circle cx="27.3" cy="7.7" r="0.4" fill="#FFF"/>
+                    <path d="M 22 5 Q 24 3 26 5 Q 28 3 30 5" fill="#FF0000"/>
+                    <ellipse cx="15" cy="15" rx="4" ry="6" fill="#FFA500" stroke="#FFD700" stroke-width="0.5"/>
+                    <ellipse cx="8" cy="16" rx="3" ry="5" fill="#FFA500" stroke="#FFD700" stroke-width="0.5"/>
+                </svg>
+            `;
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgChicken);
+            return img;
+        }
+        
+        const chickenImg = createChickenImage();
+        
+        // Initialize game
+        function init() {
+            reset();
+            gameLoop();
+            console.log('Game initialized');
+        }
+        
+        // Reset game
+        function reset() {
+            chicken.x = 100;
+            chicken.y = canvas.height / 2;
+            chicken.velocity = 0;
+            pipes = [];
+            score = 0;
+            frameCount = 0;
+            gameRunning = false;
+            gameStarted = false;
+            updateScore();
+        }
+        
+        // Create pipe
+        function createPipe() {
+            const minHeight = 80;
+            const maxHeight = ground - pipeGap - 80;
+            const topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+            
+            pipes.push({
+                x: canvas.width,
+                topHeight: topHeight,
+                bottomY: topHeight + pipeGap,
+                passed: false
+            });
+        }
+        
+        // Update game
+        function update() {
+            if (!gameRunning) return;
+            
+            frameCount++;
+            
+            // Update chicken
+            chicken.velocity += chicken.gravity;
+            if (chicken.velocity > chicken.maxVelocity) {
+                chicken.velocity = chicken.maxVelocity;
+            }
+            chicken.y += chicken.velocity;
+            
+            // Update pipes
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                const pipe = pipes[i];
+                pipe.x -= pipeSpeed;
+                
+                // Score when passing pipe
+                if (!pipe.passed && pipe.x + pipeWidth < chicken.x) {
+                    pipe.passed = true;
+                    score++;
+                    updateScore();
+                }
+                
+                // Remove off-screen pipes
+                if (pipe.x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                }
+                
+                // Collision detection
+                if (pipe.x < chicken.x + chicken.width && pipe.x + pipeWidth > chicken.x) {
+                    if (chicken.y < pipe.topHeight || chicken.y + chicken.height > pipe.bottomY) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+            
+            // Create new pipes
+            if (frameCount > 120 && (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 180)) {
+                createPipe();
+            }
+            
+            // Ground and ceiling collision
+            if (chicken.y + chicken.height > ground || chicken.y < 0) {
+                gameOver();
+            }
+        }
+        
+        // Draw game
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw pipes
+            pipes.forEach(pipe => {
+                ctx.fillStyle = '#228B22';
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, ground - pipe.bottomY);
+                
+                // Pipe caps
+                ctx.fillStyle = '#32CD32';
+                ctx.fillRect(pipe.x - 3, pipe.topHeight - 15, pipeWidth + 6, 15);
+                ctx.fillRect(pipe.x - 3, pipe.bottomY, pipeWidth + 6, 15);
+            });
+            
+            // Draw ground
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, ground, canvas.width, groundHeight);
+            
+            // Draw chicken
+            if (gameRunning && chickenImg.complete) {
+                ctx.drawImage(chickenImg, chicken.x, chicken.y, chicken.width, chicken.height);
+            }
+            
+            // Draw start screen
+            if (!gameStarted) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🐔 Flappy Chicken', canvas.width/2, canvas.height/2 - 50);
+                
+                ctx.font = '24px Arial';
+                ctx.fillText('Click to start!', canvas.width/2, canvas.height/2 + 20);
+            }
+        }
+        
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Jump function
+        function jump() {
+            if (!gameStarted) {
+                gameStarted = true;
+                gameRunning = true;
+                document.getElementById('menu').style.display = 'none';
+            }
+            
+            if (gameRunning) {
+                chicken.velocity = chicken.jumpPower;
+            }
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        // Start game
+        function startGame() {
+            document.getElementById('menu').style.display = 'none';
+            jump();
+        }
+        
+        // Restart game
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            reset();
+            jump();
+        }
+        
+        // Update score display
+        function updateScore() {
+            document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+        }
+        
+        // Event listeners
+        canvas.addEventListener('click', jump);
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+        
+        // Prevent context menu
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+        
+        // Initialize game
+        init();
+        console.log('Game script loaded');
+    </script>
+</body>
+</html>

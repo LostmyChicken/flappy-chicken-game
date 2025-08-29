@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #87CEEB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        canvas {
+            border: 2px solid #000;
+            background: #87CEEB;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        console.log('Canvas:', canvas);
+        console.log('Context:', ctx);
+        
+        // Simple test drawing
+        function testDraw() {
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(100, 100, 50, 50);
+            
+            ctx.fillStyle = '#000';
+            ctx.font = '24px Arial';
+            ctx.fillText('Test Canvas Working!', 200, 200);
+            
+            console.log('Test draw completed');
+        }
+        
+        testDraw();
+        
+        // Test animation
+        let x = 0;
+        function animate() {
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(x, 300, 30, 30);
+            
+            x = (x + 2) % canvas.width;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
