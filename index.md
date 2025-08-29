@@ -4,7 +4,9 @@ Welcome to the Ultimate Flappy Chicken experience! A fully-featured HTML5 Canvas
 
 ## 🎮 Play Now!
 
-**[🚀 ULTIMATE EDITION - Play Now! (NEW!)](ultimate.html)**
+**[📱 MOBILE ULTIMATE - Perfect for phones! (NEW!)](ultimate-mobile.html)**
+
+**[🚀 DESKTOP ULTIMATE - Full features](ultimate.html)**
 
 **[🌟 Enhanced Version](final.html)**
 
@@ -60,7 +62,10 @@ python3 server.py
 
 - **Tap the screen** to make the chicken flap
 - **Keep tapping regularly** to maintain flight
-- Works on all mobile browsers
+- **Mobile Ultimate Edition** - Optimized for touch devices
+- **Responsive design** - Works perfectly on all screen sizes
+- **Touch-friendly controls** - Large buttons and smooth interactions
+- Works on all mobile browsers (iOS Safari, Chrome, Firefox, etc.)
 
 ## 🏆 Tips for High Scores
 
