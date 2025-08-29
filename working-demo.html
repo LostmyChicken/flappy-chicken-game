@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐔 Flappy Chicken - Working Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 50%, #90EE90 100%);
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-width: 600px;
+        }
+        
+        .instructions h2 {
+            color: #8B4513;
+            margin-top: 0;
+        }
+        
+        .instructions p {
+            color: #2C3E50;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .highlight {
+            background: #FFD700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        canvas {
+            border: 4px solid #8B4513;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.4);
+            cursor: pointer;
+        }
+        
+        .controls {
+            margin-top: 15px;
+            color: #2C3E50;
+            text-align: center;
+            background: rgba(255,255,255,0.8);
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+        
+        .demo-mode {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, #A0522D 0%, #CD853F 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>🐔 How Flappy Chicken Works</h2>
+        <p><strong>This is a physics-based game!</strong> The chicken constantly falls due to gravity.</p>
+        <p>You must <span class="highlight">keep clicking</span> to make the chicken flap and stay airborne.</p>
+        <p><strong>Key Points:</strong></p>
+        <ul style="text-align: left; display: inline-block;">
+            <li>The chicken falls automatically (gravity)</li>
+            <li>Each click gives an upward boost</li>
+            <li>Stop clicking = chicken falls = game over</li>
+            <li>Click every 0.5-1 seconds to maintain flight</li>
+            <li>Navigate through pipe gaps to score points</li>
+        </ul>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="controls">
+        <strong>Controls:</strong> Click canvas or press SPACE to flap | P to pause
+    </div>
+    
+    <div class="demo-mode">
+        <button onclick="startAutoDemo()">🤖 Auto Demo</button>
+        <button onclick="stopAutoDemo()">⏹️ Stop Demo</button>
+        <button onclick="resetGame()">🔄 Reset</button>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameRunning = false;
+        let gameStarted = false;
+        let score = 0;
+        let frameCount = 0;
+        let autoDemo = false;
+        let autoDemoInterval;
+        
+        // Chicken
+        const chicken = {
+            x: 100,
+            y: 250,
+            width: 35,
+            height: 25,
+            velocity: 0,
+            gravity: 0.35,
+            jumpPower: -7,
+            maxVelocity: 8
+        };
+        
+        // Pipes
+        let pipes = [];
+        const pipeWidth = 60;
+        const pipeGap = 200;
+        const pipeSpeed = 2;
+        const ground = canvas.height - 80;
+        
+        // Create chicken sprite
+        function createChicken() {
+            const img = new Image();
+            const svgChicken = `
+                <svg width="35" height="25" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="17" cy="17" rx="12" ry="8" fill="#FFD700" stroke="#FFA500" stroke-width="1"/>
+                    <circle cx="25" cy="10" r="6" fill="#FFD700" stroke="#FFA500" stroke-width="1"/>
+                    <polygon points="29,10 34,11 29,12" fill="#FF8C00"/>
+                    <circle cx="27" cy="8" r="1.2" fill="#000"/>
+                    <circle cx="27.3" cy="7.7" r="0.4" fill="#FFF"/>
+                    <path d="M 22 5 Q 24 3 26 5 Q 28 3 30 5" fill="#FF0000"/>
+                    <ellipse cx="15" cy="15" rx="4" ry="6" fill="#FFA500"/>
+                    <ellipse cx="8" cy="16" rx="3" ry="5" fill="#FFA500"/>
+                </svg>
+            `;
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgChicken);
+            return img;
+        }
+        
+        const chickenImg = createChicken();
+        
+        // Reset game
+        function resetGame() {
+            chicken.y = canvas.height / 2;
+            chicken.velocity = 0;
+            pipes = [];
+            score = 0;
+            frameCount = 0;
+            gameRunning = false;
+            gameStarted = false;
+            stopAutoDemo();
+        }
+        
+        // Create pipe
+        function createPipe() {
+            const minHeight = 80;
+            const maxHeight = ground - pipeGap - 80;
+            const topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+            
+            pipes.push({
+                x: canvas.width,
+                topHeight: topHeight,
+                bottomY: topHeight + pipeGap,
+                passed: false
+            });
+        }
+        
+        // Update game
+        function update() {
+            if (!gameRunning) return;
+            
+            frameCount++;
+            
+            // Update chicken
+            chicken.velocity += chicken.gravity;
+            if (chicken.velocity > chicken.maxVelocity) {
+                chicken.velocity = chicken.maxVelocity;
+            }
+            chicken.y += chicken.velocity;
+            
+            // Update pipes
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                const pipe = pipes[i];
+                pipe.x -= pipeSpeed;
+                
+                // Score
+                if (!pipe.passed && pipe.x + pipeWidth < chicken.x) {
+                    pipe.passed = true;
+                    score++;
+                }
+                
+                // Remove off-screen pipes
+                if (pipe.x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                }
+                
+                // Collision
+                if (pipe.x < chicken.x + chicken.width && 
+                    pipe.x + pipeWidth > chicken.x) {
+                    if (chicken.y < pipe.topHeight || 
+                        chicken.y + chicken.height > pipe.bottomY) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+            
+            // Create new pipes
+            if (frameCount > 180 && (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300)) {
+                createPipe();
+            }
+            
+            // Ground collision
+            if (chicken.y + chicken.height > ground || chicken.y < 0) {
+                gameOver();
+            }
+        }
+        
+        // Draw game
+        function draw() {
+            // Clear
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Sky
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.8, '#90EE90');
+            gradient.addColorStop(1, '#228B22');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Ground
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, ground, canvas.width, 80);
+            
+            // Pipes
+            ctx.fillStyle = '#228B22';
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, ground - pipe.bottomY);
+            });
+            
+            // Chicken
+            ctx.drawImage(chickenImg, chicken.x, chicken.y, chicken.width, chicken.height);
+            
+            // Physics info
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+            ctx.fillText(`Velocity: ${chicken.velocity.toFixed(2)}`, 10, 50);
+            ctx.fillText(`Y Position: ${chicken.y.toFixed(1)}`, 10, 70);
+            ctx.fillText(`Game Running: ${gameRunning}`, 10, 90);
+            
+            if (autoDemo) {
+                ctx.fillStyle = '#FF0000';
+                ctx.fillText('AUTO DEMO MODE', 10, 110);
+            }
+            
+            // Start screen
+            if (!gameStarted) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🐔 Flappy Chicken Demo', canvas.width/2, canvas.height/2 - 50);
+                
+                ctx.font = '20px Arial';
+                ctx.fillText('Click to start flying!', canvas.width/2, canvas.height/2);
+                ctx.fillText('Keep clicking to stay airborne!', canvas.width/2, canvas.height/2 + 30);
+                
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText('Watch the velocity - positive = falling, negative = rising', canvas.width/2, canvas.height/2 + 70);
+                
+                ctx.textAlign = 'left';
+            }
+        }
+        
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Jump
+        function jump() {
+            if (!gameStarted) {
+                gameStarted = true;
+                gameRunning = true;
+            }
+            
+            if (gameRunning) {
+                chicken.velocity = chicken.jumpPower;
+            }
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            stopAutoDemo();
+            
+            setTimeout(() => {
+                if (confirm(`Game Over! Score: ${score}\n\nThe chicken fell because you stopped clicking!\nClick OK to try again.`)) {
+                    resetGame();
+                }
+            }, 100);
+        }
+        
+        // Auto demo
+        function startAutoDemo() {
+            resetGame();
+            autoDemo = true;
+            jump(); // Start the game
+            
+            // Auto-click every 600ms to demonstrate proper gameplay
+            autoDemoInterval = setInterval(() => {
+                if (gameRunning && autoDemo) {
+                    jump();
+                }
+            }, 600);
+        }
+        
+        function stopAutoDemo() {
+            autoDemo = false;
+            if (autoDemoInterval) {
+                clearInterval(autoDemoInterval);
+                autoDemoInterval = null;
+            }
+        }
+        
+        // Events
+        canvas.addEventListener('click', jump);
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        // Start
+        gameLoop();
+    </script>
+</body>
+</html>

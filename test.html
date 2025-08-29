@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Flappy Chicken</title>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+    <div id="debug"></div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const debug = document.getElementById('debug');
+        
+        let gameRunning = false;
+        let gameStarted = false;
+        let frameCount = 0;
+        
+        const chicken = {
+            x: 100,
+            y: 250,
+            width: 40,
+            height: 30,
+            velocity: 0,
+            gravity: 0.4,
+            jumpPower: -8
+        };
+        
+        function update() {
+            if (!gameRunning) return;
+            
+            frameCount++;
+            chicken.velocity += chicken.gravity;
+            chicken.y += chicken.velocity;
+            
+            // Simple ground collision - ground at y=500
+            if (chicken.y + chicken.height > 500) {
+                console.log('Ground collision at frame', frameCount);
+                gameRunning = false;
+                alert('Game Over - Ground collision!');
+            }
+            
+            // Top collision
+            if (chicken.y < 0) {
+                console.log('Top collision at frame', frameCount);
+                gameRunning = false;
+                alert('Game Over - Top collision!');
+            }
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, 500);
+            
+            // Ground
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, 500, canvas.width, 100);
+            
+            // Chicken
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(chicken.x, chicken.y, chicken.width, chicken.height);
+            
+            // Debug info
+            debug.innerHTML = `
+                Frame: ${frameCount}<br>
+                Game Running: ${gameRunning}<br>
+                Game Started: ${gameStarted}<br>
+                Chicken Y: ${chicken.y.toFixed(2)}<br>
+                Chicken Bottom: ${(chicken.y + chicken.height).toFixed(2)}<br>
+                Velocity: ${chicken.velocity.toFixed(2)}<br>
+                Ground at: 500
+            `;
+            
+            if (!gameStarted) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Click to start!', canvas.width/2, canvas.height/2);
+            }
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function jump() {
+            console.log('Jump called!');
+            if (!gameStarted) {
+                gameStarted = true;
+                gameRunning = true;
+                console.log('Game started!');
+            }
+            
+            if (gameRunning) {
+                chicken.velocity = chicken.jumpPower;
+                console.log('Chicken jumped! New velocity:', chicken.velocity);
+            }
+        }
+        
+        canvas.addEventListener('click', jump);
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        gameLoop();
+    </script>
+</body>
+</html>
